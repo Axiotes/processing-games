@@ -264,16 +264,18 @@ void drawAlphabet() {
 }
 
 void checkWordLetter(char letter) {
+  boolean correctLetter = false;
+  
   for (int i = 0; i < word.length(); i++) {
     char wordLetter = word.charAt(i);
     
     if (Character.toLowerCase(wordLetter) == Character.toLowerCase(letter)) {
+      correctLetter = true;
       correctLetters += 1;
-      return;
     }
   }
   
-  quantityErrors += 1;
+  quantityErrors = correctLetter ? quantityErrors : quantityErrors+1;
 }
 
 boolean checkSelectedLetter(char letter) {
