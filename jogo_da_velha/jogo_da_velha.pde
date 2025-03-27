@@ -10,12 +10,8 @@ boolean playerTurn = true;
 boolean matchOver = false;
 String message = "";
 
-boolean waitMatch = false;
-int startTimeMatch = 0;
-boolean waitGame = false;
-int startTimeGame = 0;
-boolean waitCpu = false;
-int startTimeCpu = 0;
+boolean waitMatch = false, waitGame = false, waitCpu = false;
+int startTimeMatch = 0, startTimeGame = 0, startTimeCpu = 0;
 
 int player1Rgb = 255;
 int[] player2Rgb = new int[3];
@@ -79,9 +75,9 @@ void mousePressed() {
       if (!board[0].getBoolean("status") && playerTurn) {
         board[0].setBoolean("status", true);
         board[0].setInt("player", player);
-        checkMatchWinner();
+        matchStatus();
         player = player == 1 ? 2 : 1;
-        actionMode();
+        defineTurn();
         changeColor();
       }
     }
@@ -92,10 +88,10 @@ void mousePressed() {
       if (!board[1].getBoolean("status") && playerTurn) {
         board[1].setBoolean("status", true);
         board[1].setInt("player", player);
-        checkMatchWinner();
+        matchStatus();
         player = player == 1 ? 2 : 1;
         playerTurn = playerMode == true ? true : false;
-        actionMode();
+        defineTurn();
         changeColor();
       }
     }
@@ -106,10 +102,10 @@ void mousePressed() {
       if (!board[2].getBoolean("status") && playerTurn) {
         board[2].setBoolean("status", true);
         board[2].setInt("player", player);
-        checkMatchWinner();
+        matchStatus();
         player = player == 1 ? 2 : 1;
         playerTurn = playerMode == true ? true : false;
-        actionMode();
+        defineTurn();
         changeColor();
       }
     }
@@ -120,10 +116,10 @@ void mousePressed() {
       if (!board[3].getBoolean("status") && playerTurn) {
         board[3].setBoolean("status", true);
         board[3].setInt("player", player);
-        checkMatchWinner();
+        matchStatus();
         player = player == 1 ? 2 : 1;
         playerTurn = playerMode == true ? true : false;
-        actionMode();
+        defineTurn();
         changeColor();
       }
     }
@@ -134,10 +130,10 @@ void mousePressed() {
       if (!board[4].getBoolean("status") && playerTurn) {
         board[4].setBoolean("status", true);
         board[4].setInt("player", player);
-        checkMatchWinner();
+        matchStatus();
         player = player == 1 ? 2 : 1;
         playerTurn = playerMode == true ? true : false;
-        actionMode();
+        defineTurn();
         changeColor();
       }
     }
@@ -148,10 +144,10 @@ void mousePressed() {
       if (!board[5].getBoolean("status") && playerTurn) {
         board[5].setBoolean("status", true);
         board[5].setInt("player", player);
-        checkMatchWinner();
+        matchStatus();
         player = player == 1 ? 2 : 1;
         playerTurn = playerMode == true ? true : false;
-        actionMode();
+        defineTurn();
         changeColor();
       }
     }
@@ -162,10 +158,10 @@ void mousePressed() {
       if (!board[6].getBoolean("status") && playerTurn) {
         board[6].setBoolean("status", true);
         board[6].setInt("player", player);
-        checkMatchWinner();
+        matchStatus();
         player = player == 1 ? 2 : 1;
         playerTurn = playerMode == true ? true : false;
-        actionMode();
+        defineTurn();
         changeColor();
       }
     }
@@ -176,10 +172,10 @@ void mousePressed() {
       if (!board[7].getBoolean("status") && playerTurn) {
         board[7].setBoolean("status", true);
         board[7].setInt("player", player);
-        checkMatchWinner();
+        matchStatus();
         player = player == 1 ? 2 : 1;
         playerTurn = playerMode == true ? true : false;
-        actionMode();
+        defineTurn();
         changeColor();
       }
     }
@@ -190,10 +186,10 @@ void mousePressed() {
       if (!board[8].getBoolean("status") && playerTurn) {
         board[8].setBoolean("status", true);
         board[8].setInt("player", player);
-        checkMatchWinner();
+        matchStatus();
         player = player == 1 ? 2 : 1;
         playerTurn = playerMode == true ? true : false;
-        actionMode();
+        defineTurn();
         changeColor();
       }
     }
@@ -312,7 +308,7 @@ void inicializePlayersWins() {
   playerWins[1].setInt("wins", 0);
 }
 
-void checkMatchWinner() {
+boolean checkMatchWinner() {
   // Verificar linhas e colunas
   for (int i = 0; i < 3; i++) {
     int lineEl1 = i * 3;
@@ -341,15 +337,7 @@ void checkMatchWinner() {
       board[columnEl2].getBoolean("status") && 
       board[columnEl3].getBoolean("status"));
       
-    if (allMarked && samePlayer) {
-      message = "Jogador " + player + " ganhou a " + match + "º partida";
-      playerWins[player-1].setInt("wins", playerWins[player-1].getInt("wins") + 1);
-      checkGameWinner();
-      waitMatch = true;
-      startTimeMatch = millis();
-      matchOver = true;
-      return;
-    }
+    if (allMarked && samePlayer) return true;
   }
   
   // Verficar diagonais
@@ -371,15 +359,9 @@ void checkMatchWinner() {
       board[4].getBoolean("status") && 
       board[6].getBoolean("status"));
       
-  if (allMarkedDiagonals && samePlayerDiagonals) {
-      message = "Jogador " + player + " ganhou a " + match + "º partida";
-      playerWins[player-1].setInt("wins", playerWins[player-1].getInt("wins") + 1);
-      checkGameWinner();
-      waitMatch = true;
-      startTimeMatch = millis();
-      matchOver = true;
-      return;
-  }
+  if (allMarkedDiagonals && samePlayerDiagonals) return true;
+  
+  return false;
 }
 
 void checkGameWinner() {
@@ -390,7 +372,35 @@ void checkGameWinner() {
   }
 }
 
-void actionMode() {
+void matchStatus() {
+  boolean winner = checkMatchWinner();
+  
+  if (winner) {
+    message = "Jogador " + player + " ganhou a " + match + "º partida";
+    playerWins[player-1].setInt("wins", playerWins[player-1].getInt("wins") + 1);
+    checkGameWinner();
+    waitMatch = true;
+    startTimeMatch = millis();
+    matchOver = true;
+    
+    return;
+  }
+  
+  boolean allMarked = board[0].getBoolean("status") && board[1].getBoolean("status") &&
+      board[2].getBoolean("status") && board[3].getBoolean("status") &&
+      board[4].getBoolean("status") && board[5].getBoolean("status") &&
+      board[6].getBoolean("status") && board[7].getBoolean("status") &&
+      board[8].getBoolean("status");
+  
+  if (allMarked) {
+    message = "Empate!";
+    waitMatch = true;
+    startTimeMatch = millis();
+    matchOver = true;
+  }
+}
+
+void defineTurn() {
   if (playerMode == true) {
     playerTurn = true;
     waitCpu = false;
@@ -410,7 +420,7 @@ void cpuChoice() {
     if (!board[position].getBoolean("status")) {
       board[position].setBoolean("status", true);
       board[position].setInt("player", player);
-      checkMatchWinner();
+      matchStatus();
       player = player == 1 ? 2 : 1;
       playerTurn = true;
       changeColor();
