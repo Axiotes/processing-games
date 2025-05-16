@@ -2,6 +2,7 @@ PImage backgroundImage, playerLifesImage, player;
 int playerLifes = 3, playerX, playerY;
 boolean playing, playerUp, playerDown, playerLeft, playerRight, playerShooting, bulletVisible;
 JSONObject[] bullets;
+String currentDirection = "right";
 
 void setup() {
   size(800, 600);
@@ -32,10 +33,22 @@ void keyPressed() {
   }
 
   if (playing) {
-    if (key == 'w' || key == 'W') playerUp = true;
-    if (key == 's' || key == 'S') playerDown = true;
-    if (key == 'a' || key == 'A') playerLeft = true;
-    if (key == 'd' || key == 'D') playerRight = true;
+    if (key == 'w' || key == 'W') {
+      playerUp = true;
+      currentDirection = "up";
+    }
+    if (key == 's' || key == 'S') { 
+      playerDown = true;
+      currentDirection = "down";
+    }
+    if (key == 'a' || key == 'A') { 
+      playerLeft = true;
+      currentDirection = "left";
+    }
+    if (key == 'd' || key == 'D') { 
+      playerRight = true;
+      currentDirection = "right";
+    }
     if (key == ' ') playerShooting = true;
   }
 }
@@ -48,7 +61,7 @@ void keyReleased() {
     if (key == 'd' || key == 'D') playerRight = false;
     if (key == ' ') { 
       playerShooting = false; 
-      shoot();
+      shoot(currentDirection);
     }
   }
 }
@@ -91,12 +104,10 @@ void playerSprite() {
   player = loadImage("player.png");
 }
 
-void shoot() {
+void shoot(String direction) {
   for (int i = 0; i < bullets.length; i++) {
     if (!bullets[i].getBoolean("active")) {
-      bullets[i].setInt("x", playerX);
-      bullets[i].setInt("y", playerY + 20);
-      bullets[i].setBoolean("active", true);
+      setBullet(i, true, playerX, playerY, direction);
       return;
     }
   }
@@ -111,16 +122,23 @@ void activeBullets() {
       
       image(bullet, bulletX, bulletY);
       
-      bullets[i].setInt("x", bulletX + 10);
-      // bullets[i].setInt("y", bulletX + 10);
+      if (bullets[i].getString("direction").equals("left")) bullets[i].setInt("x", bulletX - 10); 
+      if (bullets[i].getString("direction").equals("right")) bullets[i].setInt("x", bulletX + 10);
+      if (bullets[i].getString("direction").equals("up")) bullets[i].setInt("y", bulletY - 10);
+      if (bullets[i].getString("direction").equals("down")) bullets[i].setInt("y", bulletY + 10); 
       
-      if (bulletX > width) {
-        bullets[i].setBoolean("active", false);
-        bullets[i].setInt("x", 0);
-        bullets[i].setInt("y", 0);
-      }
+      boolean outOfScreen = (bulletX > width || bulletX < 0 || bulletY > height || bulletY < 0);
+      
+      if (outOfScreen) setBullet(i, false, 0, 0, "");
     }
   }
+}
+
+void setBullet(int index, boolean active, int x, int y, String direction) {
+  bullets[index].setBoolean("active", active);
+  bullets[index].setInt("x", x);
+  bullets[index].setInt("y", y);
+  bullets[index].setString("direction", direction);
 }
 
 void initializeGame() {
@@ -132,8 +150,6 @@ void initializeGame() {
   bullets = new JSONObject[6];
   for (int i = 0; i < bullets.length; i++) {
     bullets[i] = new JSONObject();
-    bullets[i].setBoolean("active", false);
-    bullets[i].setInt("x", 0);
-    bullets[i].setInt("y", 0);
+    setBullet(i, false, 0, 0, "");
   }
 }
