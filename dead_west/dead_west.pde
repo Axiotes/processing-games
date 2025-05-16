@@ -1,6 +1,10 @@
-PImage backgroundImage, playerLifesImage, player;
+PImage backgroundImage;
+
+PImage playerLifesImage, player; 
 int playerLifes = 3, playerX, playerY;
-boolean playing, playerUp, playerDown, playerLeft, playerRight, playerShooting, bulletVisible;
+boolean playing, playerUp, playerDown, playerLeft, playerRight, playerShooting;
+
+boolean bulletVisible;
 JSONObject[] bullets;
 String currentDirection = "right";
 
@@ -21,6 +25,7 @@ void draw() {
     movePlayer();
     playerSprite();
     activeBullets();
+    zombieLevel1();
     image(player, playerX, playerY);
   }
 }
@@ -139,6 +144,43 @@ void setBullet(int index, boolean active, int x, int y, String direction) {
   bullets[index].setInt("x", x);
   bullets[index].setInt("y", y);
   bullets[index].setString("direction", direction);
+}
+
+void zombieLevel1() {
+  JSONObject zombie = new JSONObject();
+  
+  zombie.setString("sprite", "zombie-1-left.png");
+  zombie.setInt("score", 10);
+  zombie.setInt("life", 1);
+  zombie.setInt("x", width/2);
+  zombie.setInt("y", height/2);
+  
+  zombieCollider(zombie);
+  
+  PImage zombieSprite = loadImage(zombie.getString("sprite"));
+  image(zombieSprite, zombie.getInt("x"), zombie.getInt("y"));
+}
+
+void zombieCollider(JSONObject zombie) {
+  for (int i = 0; i < bullets.length; i++) {
+    if (bullets[i].getBoolean("active")) {
+      int bulletX = bullets[i].getInt("x");
+      int bulletY = bullets[i].getInt("y");
+    
+      int zombieX = zombie.getInt("x");
+      int zombieY = zombie.getInt("y");
+      
+      boolean collidedX = (bulletX >= zombieX-15 && bulletX <= zombieX+20);
+      boolean collidedY = (bulletY >= zombieY-20 && bulletY <= zombieY+40);
+      
+      if (collidedX  && collidedY) {
+        setBullet(i, false, 0, 0, "");
+        int zombieLife = zombie.getInt("life");
+        
+        zombie.setInt("life", zombieLife-1);
+      }
+    }
+  }
 }
 
 void initializeGame() {
