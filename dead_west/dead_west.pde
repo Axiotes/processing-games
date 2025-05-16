@@ -8,6 +8,8 @@ boolean bulletVisible;
 JSONObject[] bullets;
 String currentDirection = "right";
 
+JSONObject[] allZombies;
+
 void setup() {
   size(800, 600);
   frameRate(30);
@@ -15,6 +17,7 @@ void setup() {
   
   playing = false;
   backgroundImage = loadImage("initial.png");
+  allZombies = new JSONObject[3];
 }
 
 void draw() {
@@ -25,8 +28,25 @@ void draw() {
     movePlayer();
     playerSprite();
     activeBullets();
-    zombieLevel1();
     image(player, playerX, playerY);
+    
+    for (int i = 0; i < allZombies.length; i++) {
+      JSONObject zombie = allZombies[i];
+      
+      zombieCollider(zombie);
+      
+      if (zombie.getInt("life") == 0) {
+        zombie.setString("sprite", "");
+        zombie.setInt("score", 0);
+        zombie.setInt("life", 0);
+        zombie.setInt("x", 0);
+        zombie.setInt("y", 0);
+        continue;
+      }
+      
+      PImage zombieSprite = loadImage(zombie.getString("sprite"));
+      image(zombieSprite, zombie.getInt("x"), zombie.getInt("y"));
+    }
   }
 }
 
@@ -146,19 +166,12 @@ void setBullet(int index, boolean active, int x, int y, String direction) {
   bullets[index].setString("direction", direction);
 }
 
-void zombieLevel1() {
-  JSONObject zombie = new JSONObject();
-  
-  zombie.setString("sprite", "zombie-1-left.png");
-  zombie.setInt("score", 10);
-  zombie.setInt("life", 1);
-  zombie.setInt("x", width/2);
-  zombie.setInt("y", height/2);
-  
-  zombieCollider(zombie);
-  
-  PImage zombieSprite = loadImage(zombie.getString("sprite"));
-  image(zombieSprite, zombie.getInt("x"), zombie.getInt("y"));
+void zombieLevel(JSONObject zombie, int level, int x, int y) {
+  zombie.setString("sprite", "zombie-" + level + "-left.png");
+  zombie.setInt("score", level*10);
+  zombie.setInt("life", level);
+  zombie.setInt("x", x);
+  zombie.setInt("y", y);
 }
 
 void zombieCollider(JSONObject zombie) {
@@ -173,13 +186,24 @@ void zombieCollider(JSONObject zombie) {
       boolean collidedX = (bulletX >= zombieX-15 && bulletX <= zombieX+20);
       boolean collidedY = (bulletY >= zombieY-20 && bulletY <= zombieY+40);
       
-      if (collidedX  && collidedY) {
+      if (collidedX && collidedY) {
         setBullet(i, false, 0, 0, "");
         int zombieLife = zombie.getInt("life");
         
         zombie.setInt("life", zombieLife-1);
       }
     }
+  }
+}
+
+void zombieSpawn() {
+  for (int i = 0; i < allZombies.length; i++) {
+    allZombies[i] = new JSONObject();
+    
+    int x = int(random(0, width));
+    int y = int(random(0, height));
+    
+    zombieLevel(allZombies[i], 1, x, y);
   }
 }
 
@@ -194,4 +218,6 @@ void initializeGame() {
     bullets[i] = new JSONObject();
     setBullet(i, false, 0, 0, "");
   }
+  
+  zombieSpawn();
 }
