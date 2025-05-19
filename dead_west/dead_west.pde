@@ -33,7 +33,7 @@ void draw() {
     for (int i = 0; i < allZombies.length; i++) {
       JSONObject zombie = allZombies[i];
       
-      zombieCollider(zombie);
+      zombieBulletCollider(zombie);
       zombieMovement(zombie);
       
       if (zombie.getInt("life") == 0) {
@@ -191,7 +191,31 @@ void zombieLevel(JSONObject zombie, int level, int x, int y) {
   zombie.setInt("y", y);
 }
 
-void zombieCollider(JSONObject zombie) {
+void zombieBulletCollider(JSONObject zombie) {
+  int x1 = 0, x2 = 0; 
+  int y1 = 0, y2 = 0;
+  
+  if (zombie.getInt("level") == 1) { 
+    x1 = -15;
+    x2 = 20;
+    y1 = -20;
+    y2 = 40;
+  }
+  
+  if (zombie.getInt("level") == 2) { 
+    x1 = -10;
+    x2 = 50;
+    y1 = -20;
+    y2 = 65;
+  }
+  
+  if (zombie.getInt("level") == 3) { 
+    x1 = -10;
+    x2 = 70;
+    y1 = -20;
+    y2 = 85;
+  }
+  
   for (int i = 0; i < bullets.length; i++) {
     if (bullets[i].getBoolean("active")) {
       int bulletX = bullets[i].getInt("x");
@@ -200,8 +224,8 @@ void zombieCollider(JSONObject zombie) {
       int zombieX = zombie.getInt("x");
       int zombieY = zombie.getInt("y");
       
-      boolean collidedX = (bulletX >= zombieX-15 && bulletX <= zombieX+20);
-      boolean collidedY = (bulletY >= zombieY-20 && bulletY <= zombieY+40);
+      boolean collidedX = (bulletX >= zombieX+x1 && bulletX <= zombieX+x2);
+      boolean collidedY = (bulletY >= zombieY+y1 && bulletY <= zombieY+y2);
       
       if (collidedX && collidedY) {
         setBullet(i, false, 0, 0, "");
@@ -217,8 +241,8 @@ void zombieMovement(JSONObject zombie) {
   float speed = 0;
 
   if (zombie.getInt("level") == 1) speed = 3.5;
-  if (zombie.getInt("level") == 2) speed = 2;
-  if (zombie.getInt("level") == 3) speed = 1;
+  if (zombie.getInt("level") == 2) speed = 2.5;
+  if (zombie.getInt("level") == 3) speed = 2;
 
   int zombieX = zombie.getInt("x");
   int zombieY = zombie.getInt("y");
@@ -242,12 +266,36 @@ void zombieSpawn() {
   for (int i = 0; i < allZombies.length; i++) {
     allZombies[i] = new JSONObject();
     
-    int x = int(random(0, width));
-    int y = int(random(0, height));
-    
-    zombieLevel(allZombies[i], 1, x, y);
+    int x, y;
+    int spawnSide = int(random(0, 4));
+
+    switch (spawnSide) {
+      case 0:
+        x = int(random(0, width));
+        y = -50;
+        break;
+      case 1:
+        x = int(random(0, width));
+        y = height + 50;
+        break;
+      case 2:
+        x = -50;
+        y = int(random(0, height));
+        break;
+      case 3:
+        x = width + 50;
+        y = int(random(0, height));
+        break;
+      default:
+        x = int(random(0, width));
+        y = int(random(0, height));
+        break;
+    }
+   
+    zombieLevel(allZombies[i], i+1, x, y);
   }
 }
+
 
 void initializeGame() {
   playerLifesImage = loadImage("life.png");
