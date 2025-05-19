@@ -45,6 +45,13 @@ void draw() {
         continue;
       }
       
+      int level = zombie.getInt("level");
+      String spriteSide = "left";
+      
+      if (zombie.getInt("x") < playerX) spriteSide = "right";       
+      
+      zombie.setString("sprite", "zombie-" + level + "-" + spriteSide +".png");
+      
       PImage zombieSprite = loadImage(zombie.getString("sprite"));
       image(zombieSprite, zombie.getInt("x"), zombie.getInt("y"));
     }
@@ -184,7 +191,6 @@ void setBullet(int index, boolean active, int x, int y, String direction) {
 
 void zombieLevel(JSONObject zombie, int level, int x, int y) {
   zombie.setInt("level", level);
-  zombie.setString("sprite", "zombie-" + level + "-left.png");
   zombie.setInt("score", level*10);
   zombie.setInt("life", level);
   zombie.setInt("x", x);
