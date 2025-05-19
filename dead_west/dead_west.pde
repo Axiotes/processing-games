@@ -2,7 +2,9 @@ PImage backgroundImage;
 
 PImage playerLifesImage, player; 
 int playerLifes = 3, playerX, playerY;
-boolean playing, playerUp, playerDown, playerLeft, playerRight, playerShooting;
+boolean playing, playerUp, playerDown, playerLeft, playerRight, playerShooting, playerDamage;
+int lastHitTime = 0;
+int invulnerableDuration = 1000;
 
 boolean bulletVisible;
 JSONObject[] bullets;
@@ -34,6 +36,7 @@ void draw() {
       JSONObject zombie = allZombies[i];
       
       zombieBulletCollider(zombie);
+      playerCollider(zombie);
       zombieMovement(zombie);
       
       if (zombie.getInt("life") == 0) {
@@ -119,6 +122,18 @@ void playerLive() {
 }
 
 void playerSprite() {
+  if (playerDamage) {
+    player = loadImage("player-damage.png");
+    
+    int currentTime = millis();
+
+    if (currentTime - lastHitTime > invulnerableDuration) {
+      playerDamage = false;
+    }
+    
+    return;
+  }
+  
   if (playerShooting) {
     player = loadImage("player-shooting.png");
     return;
@@ -137,20 +152,46 @@ void playerSprite() {
   player = loadImage("player.png");
 }
 
-//void playerCollider() {
-//  for (int i = 0; i < allZombies.length; i++) {
-//    int zombieX = allZombies[i].getInt("x");
-//    int zombieY = allZombies[i].getInt("y");
-      
-//    boolean collidedX = (playerX >= zombieX-15 && playerX <= zombieX+20);
-//    boolean collidedY = (playerY >= zombieY-20 && playerY <= zombieY+40);
-      
-//    if (collidedX && collidedY) {
-//      println("encostou!!");
-//      playerLifes -= 1;
-//    }
-//  }
-//}
+void playerCollider(JSONObject zombie) {
+  int x1 = 0, x2 = 0; 
+  int y1 = 0, y2 = 0;
+
+  if (zombie.getInt("level") == 1) { 
+    x1 = -15;
+    x2 = 20;
+    y1 = -20;
+    y2 = 40;
+  }
+  if (zombie.getInt("level") == 2) { 
+    x1 = -10;
+    x2 = 50;
+    y1 = -20;
+    y2 = 65;
+  }
+  if (zombie.getInt("level") == 3) { 
+    x1 = -10;
+    x2 = 70;
+    y1 = -20;
+    y2 = 85;
+  }
+
+  int zombieX = zombie.getInt("x");
+  int zombieY = zombie.getInt("y");
+
+  boolean collidedX = (playerX >= zombieX + x1 && playerX <= zombieX + x2);
+  boolean collidedY = (playerY >= zombieY + y1 && playerY <= zombieY + y2);
+
+  if (collidedX && collidedY) {
+    int currentTime = millis();
+
+    if (currentTime - lastHitTime > invulnerableDuration) {
+      playerLifes--;
+      playerDamage = true;
+      lastHitTime = currentTime;
+    }
+  }
+}
+
 
 void shoot(String direction) {
   for (int i = 0; i < bullets.length; i++) {
