@@ -3,9 +3,13 @@ int totalScore = 0;
 
 PImage playerLifesImage, player;
 int playerLifes = 3, playerX, playerY;
-boolean playing, playerUp, playerDown, playerLeft, playerRight, playerShooting, playerDamage, playerDead;
+boolean playing, playerUp, playerDown, playerLeft, playerRight, playerShooting, playerDamage;
 int lastHitTime = 0, lastDeadTime = 0;
 int invulnerableDuration = 1000, deadSpriteDuration = 1000, gameOverDuration = 1000;
+
+boolean playerDeadState, restartGame = false;
+long deadSpriteStartTime;
+long gameOverStartTime;
 
 boolean bulletVisible;
 JSONObject[] bullets;
@@ -20,50 +24,80 @@ void setup() {
 
   playing = false;
   backgroundImage = loadImage("initial.png");
-  allZombies = new JSONObject[3];
+  allZombies = new JSONObject[10];
 }
 
 void draw() {
   image(backgroundImage, 0, 0);
-  
-  if (!playing) return; 
+
+  if (!playing) return;
+
+  if (playerLifes == 0 && !playerDeadState) {
+    playerDeadState = true;
+    deadSpriteStartTime = millis();
+
+    for (int i = 0; i < allZombies.length; i++) {
+      JSONObject zombie = allZombies[i];
+      zombie.setInt("life", 0); 
+      zombie.setInt("x", -1000);
+      zombie.setInt("y", -1000);
+    }
+  }
+
+  if (playerDeadState) {
+    long currentTime = millis();
+
+    if (currentTime - deadSpriteStartTime < 1000) {
+      player = loadImage("player-dead.png");
+      image(player, playerX, playerY);
+      restartGame = true;
+    }
+    else if (restartGame) {
+      playing = false;
+      backgroundImage = loadImage("initial.png");
+      gameOverStartTime = 0;
+      playerDeadState = false;
+      restartGame = false;
+    }
+    return;
+  }
 
   score();
   playerSpriteLive();
   movePlayer();
   playerSprite();
   activeBullets();
-  image(player, playerX, playerY);
+
+  if (!playerDeadState) {
+    image(player, playerX, playerY);
+  }
 
   for (int i = 0; i < allZombies.length; i++) {
     JSONObject zombie = allZombies[i];
 
-    zombieBulletCollider(zombie);
-    playerCollider(zombie);
-    zombieMovement(zombie);
-
     if (zombie.getInt("life") == 0) {
       totalScore += zombie.getInt("score");
-      zombie.setString("sprite", "");
+      
       zombie.setInt("score", 0);
       zombie.setInt("life", 0);
       zombie.setInt("x", -100);
       zombie.setInt("y", -100);
+    
       continue;
     }
+    zombieBulletCollider(zombie);
+    playerCollider(zombie);
+    zombieMovement(zombie);
 
     int level = zombie.getInt("level");
     String spriteSide = "left";
-
     if (zombie.getInt("x") < playerX) spriteSide = "right";
-
-    zombie.setString("sprite", "zombie-" + level + "-" + spriteSide +".png");
-
+    
+    zombie.setString("sprite", "zombie-" + level + "-" + spriteSide + ".png");
+    
     PImage zombieSprite = loadImage(zombie.getString("sprite"));
     image(zombieSprite, zombie.getInt("x"), zombie.getInt("y"));
   }
-
-  //playerDead();
 }
 
 void keyPressed() {
@@ -116,27 +150,6 @@ void movePlayer() {
   if (playerRight && playerX < width - 66) playerX += speed;
 }
 
-void playerDead() {
-  if (playerLifes == 0) {
-    for (int i = 0; i < allZombies.length; i++) {
-      JSONObject zombie = allZombies[i];
-
-      zombie.setString("sprite", "");
-      zombie.setInt("score", 0);
-      zombie.setInt("life", 0);
-      zombie.setInt("x", -100);
-      zombie.setInt("y", -100);
-    }
-    playerDead = true;
-
-    int currentTime = millis();
-
-    if (currentTime - lastDeadTime > deadSpriteDuration) {
-      backgroundImage = loadImage("game-over.png");
-    }
-  }
-}
-
 void playerSpriteLive() {
   int x = 60;
 
@@ -148,45 +161,32 @@ void playerSpriteLive() {
 }
 
 void playerSprite() {
-  if (playerDead) {
-    player = loadImage("player-dead.png");
-
-    int currentTime = millis();
-
-    if (currentTime - lastDeadTime > deadSpriteDuration) {
-      playerDead = false;
-    }
-
-    return;
-  }
-
   if (playerDamage) {
     player = loadImage("player-damage.png");
-
+    
     int currentTime = millis();
-
+    
     if (currentTime - lastHitTime > invulnerableDuration) {
       playerDamage = false;
     }
-
     return;
   }
-
+  
   if (playerShooting) {
     player = loadImage("player-shooting.png");
     return;
   }
-
+  
   if (playerLeft) {
     player = loadImage("player-left.png");
     return;
   }
-
+  
   if (playerRight) {
     player = loadImage("player-right.png");
     return;
   }
-
+  
   player = loadImage("player.png");
 }
 
@@ -348,6 +348,8 @@ void zombieMovement(JSONObject zombie) {
 
 
 void zombieSpawn() {
+  int level = 1;
+  
   for (int i = 0; i < allZombies.length; i++) {
     allZombies[i] = new JSONObject();
 
@@ -376,8 +378,11 @@ void zombieSpawn() {
       y = int(random(0, height));
       break;
     }
+    
+    level++;
+    if (level > 3) level = 1;
 
-    zombieLevel(allZombies[i], i+1, x, y);
+    zombieLevel(allZombies[i], level, x, y);
   }
 }
 
@@ -406,12 +411,15 @@ void initializeGame() {
   playerY = height/2 - 50;
   playerLifes = 3;
   totalScore = 0;
-
   bullets = new JSONObject[6];
   for (int i = 0; i < bullets.length; i++) {
     bullets[i] = new JSONObject();
     setBullet(i, false, 0, 0, "");
   }
-
   zombieSpawn();
+
+  // Resetar as novas variáveis de estado
+  playerDeadState = false;
+  deadSpriteStartTime = 0;
+  gameOverStartTime = 0;
 }
