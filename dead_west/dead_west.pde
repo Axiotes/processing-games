@@ -1,5 +1,6 @@
-PImage backgroundImage;
+PImage backgroundImage, spriteScore;
 int totalScore = 0;
+int[] records;
 
 PImage playerLifesImage, player;
 int playerLifes = 3, playerX, playerY;
@@ -25,10 +26,13 @@ void setup() {
   playing = false;
   backgroundImage = loadImage("initial.png");
   allZombies = new JSONObject[10];
+  records = new int[3];
+  spriteScore = loadImage("score.png");
 }
 
 void draw() {
   image(backgroundImage, 0, 0);
+  topScores();
 
   if (!playing) return;
 
@@ -47,12 +51,13 @@ void draw() {
   if (playerDeadState) {
     long currentTime = millis();
 
-    if (currentTime - deadSpriteStartTime < 1000) {
+    if (currentTime - deadSpriteStartTime < 1500) {
       player = loadImage("player-dead.png");
       image(player, playerX, playerY);
       restartGame = true;
     }
     else if (restartGame) {
+      newRecords();
       playing = false;
       backgroundImage = loadImage("initial.png");
       gameOverStartTime = 0;
@@ -62,7 +67,8 @@ void draw() {
     return;
   }
 
-  score();
+  image(spriteScore, 10, 10);
+  score(totalScore, 10, 15);
   playerSpriteLive();
   movePlayer();
   playerSprite();
@@ -386,21 +392,60 @@ void zombieSpawn() {
   }
 }
 
-void score() {
-  PImage spriteScore = loadImage("score.png");
-  image(spriteScore, 10, 10);
-  
-  String strScore = Integer.toString(totalScore);
+void score(int currentScore, int x, int y) {
+  String strScore = Integer.toString(currentScore);
 
-  int x = 10;
+  int scoreX = x;
   
   for (int i = 0; i < strScore.length(); i++) {
     char number = strScore.charAt(i);
     
     PImage spriteNumber = loadImage("number-" + number + ".png");
-    image(spriteNumber, spriteScore.width+x, 15);
+    image(spriteNumber, spriteScore.width+scoreX, y);
     
-    x += 25;
+    scoreX += 25;
+  }
+}
+
+void newRecords() {
+  for (int i = 0; i < records.length; i++) {
+      int record = records[i];
+      
+      if (totalScore > record) {
+        for (int j = records.length - 1; j > i; j--) {
+            records[j] = records[j-1];
+        }
+        
+        records[i] = totalScore;
+        break;
+      }
+    }
+}
+
+void topScores() {
+  if (playing) return;
+  
+  PImage text = loadImage("top-3.png");
+  
+  image(text, width-130, height-300);
+  int y = height-220;
+  
+  for(int i = 0; i < records.length; i++) {
+    int record = records[i];
+    String strRecord = Integer.toString(record);
+    int x = width-222;
+    
+    for (int j = 0; j < strRecord.length(); j++) {
+      int numbers = strRecord.length();
+      
+      if (numbers == 1) break;
+      
+      x -= 10;
+    }
+    
+    score(record, x, y);
+    
+    y += 40;
   }
 }
 
@@ -418,7 +463,6 @@ void initializeGame() {
   }
   zombieSpawn();
 
-  // Resetar as novas variáveis de estado
   playerDeadState = false;
   deadSpriteStartTime = 0;
   gameOverStartTime = 0;
