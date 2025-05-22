@@ -1,12 +1,15 @@
-PImage backgroundImage, spriteScore;
-int totalScore = 0;
+PImage backgroundImage, spriteScore, spriteWave;
+int totalScore = 0, currentWave = 1;
 int[] records;
+boolean showWaveMessage, newWave = true;
+int lastWaveTime = 0;
 
 PImage playerLifesImage, player;
 int playerLifes = 3, playerX, playerY;
 boolean playing, playerUp, playerDown, playerLeft, playerRight, playerShooting, playerDamage;
 int lastHitTime = 0, lastDeadTime = 0;
 int invulnerableDuration = 1000, deadSpriteDuration = 1000, gameOverDuration = 1000;
+int totalZombies;
 
 boolean playerDeadState, restartGame = false;
 long deadSpriteStartTime;
@@ -25,9 +28,9 @@ void setup() {
 
   playing = false;
   backgroundImage = loadImage("initial.png");
-  allZombies = new JSONObject[10];
   records = new int[3];
   spriteScore = loadImage("score.png");
+  spriteWave = loadImage("wave.png");
 }
 
 void draw() {
@@ -68,7 +71,7 @@ void draw() {
   }
 
   image(spriteScore, 10, 10);
-  score(totalScore, 10, 15);
+  spriteNumbers(totalScore, 10, 15);
   playerSpriteLive();
   movePlayer();
   playerSprite();
@@ -104,6 +107,8 @@ void draw() {
     PImage zombieSprite = loadImage(zombie.getString("sprite"));
     image(zombieSprite, zombie.getInt("x"), zombie.getInt("y"));
   }
+  
+  wave();
 }
 
 void keyPressed() {
@@ -332,8 +337,8 @@ void zombieMovement(JSONObject zombie) {
   float speed = 0;
 
   if (zombie.getInt("level") == 1) speed = 3.5;
-  if (zombie.getInt("level") == 2) speed = 2.5;
-  if (zombie.getInt("level") == 3) speed = 2;
+  if (zombie.getInt("level") == 2) speed = 3;
+  if (zombie.getInt("level") == 3) speed = 2.5;
 
   int zombieX = zombie.getInt("x");
   int zombieY = zombie.getInt("y");
@@ -354,8 +359,6 @@ void zombieMovement(JSONObject zombie) {
 
 
 void zombieSpawn() {
-  int level = 1;
-  
   for (int i = 0; i < allZombies.length; i++) {
     allZombies[i] = new JSONObject();
 
@@ -365,18 +368,18 @@ void zombieSpawn() {
     switch (spawnSide) {
     case 0:
       x = int(random(0, width));
-      y = -50;
+      y = -100;
       break;
     case 1:
       x = int(random(0, width));
-      y = height + 50;
+      y = height + 100;
       break;
     case 2:
-      x = -50;
+      x = -100;
       y = int(random(0, height));
       break;
     case 3:
-      x = width + 50;
+      x = width + 100;
       y = int(random(0, height));
       break;
     default:
@@ -385,20 +388,21 @@ void zombieSpawn() {
       break;
     }
     
-    level++;
-    if (level > 3) level = 1;
+    int level = 3;
+    if (i < 5) level = 1;
+    if (i >= 5 && i < 12) level = 2;
 
     zombieLevel(allZombies[i], level, x, y);
   }
 }
 
-void score(int currentScore, int x, int y) {
-  String strScore = Integer.toString(currentScore);
+void spriteNumbers(int numbers, int x, int y) {
+  String strNumbers = Integer.toString(numbers);
 
   int scoreX = x;
   
-  for (int i = 0; i < strScore.length(); i++) {
-    char number = strScore.charAt(i);
+  for (int i = 0; i < strNumbers.length(); i++) {
+    char number = strNumbers.charAt(i);
     
     PImage spriteNumber = loadImage("number-" + number + ".png");
     image(spriteNumber, spriteScore.width+scoreX, y);
@@ -443,9 +447,72 @@ void topScores() {
       x -= 10;
     }
     
-    score(record, x, y);
+    spriteNumbers(record, x, y);
     
     y += 40;
+  }
+}
+
+void waveMessage() {
+  if (showWaveMessage) {
+    int waveX = (width/2)-(spriteWave.height/2);
+    int waveY = (height/2)-(spriteWave.height/2);
+    
+    image(spriteWave, waveX, waveY);
+    spriteNumbers(currentWave, waveX+40, waveY+62);
+  } 
+}
+
+void wave() {
+  if (newWave) {
+    waveMessage();
+
+    int currentTime = millis();
+
+    if (currentTime - lastWaveTime > 2000) {
+      showWaveMessage = false;
+      newWave = false;
+      lastWaveTime = currentTime;
+      
+      currentWave++;
+      totalZombies += 3;
+      
+      createZombies(totalZombies);
+      zombieSpawn();
+    }
+  } else {
+    if (verifyZombiesDead()) {
+      newWave = true;
+      showWaveMessage = true;
+      lastWaveTime = millis();
+    }
+  }
+}
+
+
+boolean verifyZombiesDead() {
+  for (int i = 0; i < allZombies.length; i++) {
+    if (allZombies[i].getInt("life") != 0) return false;
+  }
+  
+  return true;
+}
+
+void createZombies(int total) {
+  if (total < 4) total = 4;
+  
+  allZombies = new JSONObject[total];
+  
+  for (int i = 0; i < allZombies.length; i++) {
+    allZombies[i] = new JSONObject();
+    JSONObject zombie = allZombies[i];
+    
+    zombie.setInt("level", 0);
+    zombie.setInt("life", 0); 
+    zombie.setInt("score", 0);
+    zombie.setInt("x", -1000);
+    zombie.setInt("y", -1000);
+    zombie.setString("sprite", "");
   }
 }
 
@@ -456,14 +523,21 @@ void initializeGame() {
   playerY = height/2 - 50;
   playerLifes = 3;
   totalScore = 0;
+  
+  playerDeadState = false;
+  deadSpriteStartTime = 0;
+  gameOverStartTime = 0;
+  
+  totalZombies = 1;
+  createZombies(totalZombies);
+  lastWaveTime = millis();
+  currentWave = 1;
+  showWaveMessage = true;
+  newWave = true;
+  
   bullets = new JSONObject[6];
   for (int i = 0; i < bullets.length; i++) {
     bullets[i] = new JSONObject();
     setBullet(i, false, 0, 0, "");
   }
-  zombieSpawn();
-
-  playerDeadState = false;
-  deadSpriteStartTime = 0;
-  gameOverStartTime = 0;
 }
