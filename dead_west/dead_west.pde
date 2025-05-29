@@ -1,3 +1,7 @@
+import processing.sound.*;
+
+SoundFile soundtrack, shootSound;
+
 PImage backgroundImage, spriteScore, spriteWave;
 int totalScore = 0, currentWave = 1;
 int[] records;
@@ -25,6 +29,10 @@ void setup() {
   size(800, 600);
   frameRate(30);
   textAlign(CENTER, TOP);
+  
+  shootSound = new SoundFile(this, "shoot.mp3");
+  soundtrack = new SoundFile(this, "soundtrack.mp3");
+  soundtrack.loop();
 
   playing = false;
   backgroundImage = loadImage("initial.png");
@@ -148,6 +156,7 @@ void keyReleased() {
     if (key == ' ') {
       playerShooting = false;
       shoot(currentDirection);
+      shootSound.play();
     }
   }
 }
