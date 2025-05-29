@@ -5,8 +5,11 @@ SoundFile soundtrack, shootSound;
 PImage backgroundImage, spriteScore, spriteWave;
 int totalScore = 0, currentWave = 1;
 int[] records;
-boolean showWaveMessage, newWave = true;
+boolean showWaveMessage, newWave = true, firstClick = true;
 int lastWaveTime = 0;
+
+boolean showingCredits = false;
+long creditsStartTime = 0;
 
 PImage playerLifesImage, player;
 int playerLifes = 3, playerX, playerY;
@@ -42,8 +45,15 @@ void setup() {
 }
 
 void draw() {
+  if (showingCredits) {
+    if (millis() - creditsStartTime >= 5000) {
+      backgroundImage = loadImage("initial.png");
+      showingCredits = false;
+    }
+  }
+  
   image(backgroundImage, 0, 0);
-  topScores();
+  if (!showingCredits) topScores();
 
   if (!playing) return;
 
@@ -74,6 +84,7 @@ void draw() {
       gameOverStartTime = 0;
       playerDeadState = false;
       restartGame = false;
+      firstClick = true;
     }
     return;
   }
@@ -120,12 +131,6 @@ void draw() {
 }
 
 void keyPressed() {
-  if (!playing) {
-    playing = true;
-    backgroundImage = loadImage("scenario_level1.png");
-    initializeGame();
-  }
-
   if (playing) {
     if (key == 'w' || key == 'W') {
       playerUp = true;
@@ -145,10 +150,27 @@ void keyPressed() {
     }
     if (key == ' ') playerShooting = true;
   }
+  
+  if (!playing && key == ' ') {
+    playing = true;
+    backgroundImage = loadImage("scenario_level1.png");
+    initializeGame();
+  }
+  
+  if (!playing && (key == 'c' || key == 'C')) {
+    backgroundImage = loadImage("credits.png");
+    showingCredits = true;
+    creditsStartTime = millis();
+  }
 }
 
 void keyReleased() {
   if (playing) {
+    if (firstClick) {
+      firstClick = false;
+      return;
+    }
+    
     if (key == 'w' || key == 'W') playerUp = false;
     if (key == 's' || key == 'S') playerDown = false;
     if (key == 'a' || key == 'A') playerLeft = false;
